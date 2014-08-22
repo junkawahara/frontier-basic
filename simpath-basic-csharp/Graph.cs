@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     /// <summary>
     /// グラフの辺を表すクラス

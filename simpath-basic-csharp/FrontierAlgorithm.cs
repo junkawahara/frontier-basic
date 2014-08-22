@@ -2,7 +2,7 @@
 using System.IO;
 using System.Text;
 
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     /// <summary>
     /// フロンティア法（Simpath）アルゴリズム本体

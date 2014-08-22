@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     class Program
     {

@@ -1,5 +1,5 @@
 ﻿
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     class StateSimpath : StateFrontier
     {

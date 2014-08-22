@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     class State
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text;
 
-namespace frontiercs
+namespace simpath_basic_csharp
 {
     /// <summary>
     /// （フロンティア法で構築する）ZDDを表すクラス
