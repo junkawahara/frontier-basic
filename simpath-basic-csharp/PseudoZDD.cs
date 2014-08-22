@@ -8,8 +8,8 @@ namespace frontiercs
     /// </summary>
     class PseudoZDD
     {
-        public static ZDDNode ZeroNode = new ZDDNode(0); // 0終端
-        public static ZDDNode OneNode = new ZDDNode(1);  // 1終端
+        public static ZDDNode ZeroTerminal = new ZDDNode(0); // 0終端
+        public static ZDDNode OneTerminal = new ZDDNode(1);  // 1終端
 
         private List<List<ZDDNode>> node_list_list_ = new List<List<ZDDNode>>();
         private int current_level_ = -1;
@@ -90,8 +90,8 @@ namespace frontiercs
 
         public long GetNumberOfSolutions()
         {
-            PseudoZDD.ZeroNode.SetNumberOfSolutions(0);
-            PseudoZDD.OneNode.SetNumberOfSolutions(1);
+            PseudoZDD.ZeroTerminal.SetNumberOfSolutions(0);
+            PseudoZDD.OneTerminal.SetNumberOfSolutions(1);
 
             for (int i = node_list_list_.Count - 1; i >= 0; --i)
             {

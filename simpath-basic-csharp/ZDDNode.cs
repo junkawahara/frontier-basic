@@ -4,10 +4,10 @@ namespace frontiercs
 {
     class ZDDNode
     {
-        private static int total_number_ = 2;
+        private static int total_id_ = 2;
 
         private Mate mate_;
-        private int number_;
+        private int id_;
         private ZDDNode zero_child_;
         private ZDDNode one_child_;
         private long number_of_solutions_;
@@ -15,7 +15,7 @@ namespace frontiercs
         public ZDDNode(int n) // n == 0 なら 0終端、n == 1 なら 1終端、n == -1 ならそれ以外のノードを作る
         {
             mate_ = null;
-            number_ = n;
+            id_ = n;
         }
 
         public ZDDNode(Mate mate)
@@ -23,17 +23,22 @@ namespace frontiercs
             mate_ = mate;
         }
 
-        public void SetNextNumber()
+        public int GetId()
         {
-            number_ = total_number_;
-            ++total_number_;
+            return id_;
+        }
+
+        public void SetNextId()
+        {
+            id_ = total_id_;
+            ++total_id_;
         }
 
         public static ZDDNode MakeInitialNode(State state)
         {
             ZDDNode node = new ZDDNode(-1);
             node.mate_ = state.MakeInitialMate();
-            node.SetNextNumber();
+            node.SetNextId();
             return node;
         }
 
@@ -76,11 +81,6 @@ namespace frontiercs
             }
         }
 
-        public int GetId()
-        {
-            return number_;
-        }
-
         public long GetNumberOfSolutions()
         {
             return number_of_solutions_;
@@ -93,13 +93,13 @@ namespace frontiercs
 
         public override string ToString()
         {
-            if (number_ >= 2)
+            if (id_ >= 2)
             {
-                return number_.ToString() + ":" + zero_child_.number_ + "," + one_child_.number_;
+                return id_.ToString() + ":" + zero_child_.id_ + "," + one_child_.id_;
             }
             else
             {
-                return number_.ToString();
+                return id_.ToString();
             }
         }
     }

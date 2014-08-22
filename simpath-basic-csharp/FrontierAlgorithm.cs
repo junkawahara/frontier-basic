@@ -11,8 +11,6 @@ namespace frontiercs
     {
         public static PseudoZDD Construct(State state)
         {
-            StringBuilder buff = new StringBuilder();
-
             PseudoZDD zdd = new PseudoZDD();
             zdd.CreateRootNode(state);
 
@@ -27,12 +25,12 @@ namespace frontiercs
                     for (int child_num = 0; child_num < 2; ++child_num) {
                         ZDDNode child_node = MakeChildNode(node, state, child_num, zdd);
 
-                        if (child_node != PseudoZDD.ZeroNode && child_node != PseudoZDD.OneNode) {
+                        if (child_node != PseudoZDD.ZeroTerminal && child_node != PseudoZDD.OneTerminal) {
                             ZDDNode cand_node = zdd.FindNodeFromNextLevel(child_node, state);
                             if (cand_node != null) {
                                 child_node = cand_node;
                             } else {
-                                child_node.SetNextNumber();
+                                child_node.SetNextId();
                                 zdd.AddNodeToNextLevel(child_node, state);
                             }
                         }
@@ -50,11 +48,11 @@ namespace frontiercs
             int c = mate.CheckTerminalPre(state, child_num);
             if (c == 0)
             {
-                return PseudoZDD.ZeroNode;
+                return PseudoZDD.ZeroTerminal;
             }
             else if (c == 1)
             {
-                return PseudoZDD.OneNode;
+                return PseudoZDD.OneTerminal;
             }
 
             mate.Update(state, child_num);
@@ -62,11 +60,11 @@ namespace frontiercs
             c = mate.CheckTerminalPost(state);
             if (c == 0)
             {
-                return PseudoZDD.ZeroNode;
+                return PseudoZDD.ZeroTerminal;
             }
             else if (c == 1)
             {
-                return PseudoZDD.OneNode;
+                return PseudoZDD.OneTerminal;
             }
             else
             {

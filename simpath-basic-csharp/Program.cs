@@ -12,13 +12,11 @@ namespace frontiercs
 
             // グラフ（隣接リスト）を標準入力から読み込む
             string adj_text = "";
-            while (true) {
-                string line = Console.ReadLine();
-                if (line == null)
-                {
-                    break;
-                }
+            string line = Console.ReadLine();
+            while (line != null)
+            {
                 adj_text += line + "\r\n";
+                line = Console.ReadLine();
             }
             graph.ParseAdjListText(adj_text);
 
