@@ -18,7 +18,7 @@ static void Remove(vector<int>* vec, int element) {
 
 
 /// <summary>
-/// ƒOƒ‰ƒt‚Ì•Ó‚ğ•\‚·ƒNƒ‰ƒX
+/// ã‚°ãƒ©ãƒ•ã®è¾ºã‚’è¡¨ã™ã‚¯ãƒ©ã‚¹
 /// </summary>
 struct Edge {
 public:
@@ -33,7 +33,7 @@ public:
 };
 
 /// <summary>
-/// ƒOƒ‰ƒt‚ğ•\‚·ƒNƒ‰ƒX
+/// ã‚°ãƒ©ãƒ•ã‚’è¡¨ã™ã‚¯ãƒ©ã‚¹
 /// </summary>
 class Graph {
 private:
@@ -51,7 +51,7 @@ public:
 		return &edge_list_;
 	}
 
-	// ƒtƒ@ƒCƒ‹‚©‚ç—×ÚƒŠƒXƒgŒ`®‚ÌƒOƒ‰ƒt‚ğ“Ç‚İ‚Ş
+	// ãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰éš£æ¥ãƒªã‚¹ãƒˆå½¢å¼ã®ã‚°ãƒ©ãƒ•ã‚’èª­ã¿è¾¼ã‚€
 	void ParseAdjListText(istream& ist)
 	{
 		number_of_vertices_ = 0;
@@ -113,18 +113,18 @@ public:
 	ZDDNode* zero_child;
 	ZDDNode* one_child;
 
-	static ZDDNode* ZeroTerminal; // 0I’[
-	static ZDDNode* OneTerminal;  // 1I’[
+	static ZDDNode* ZeroTerminal; // 0çµ‚ç«¯
+	static ZDDNode* OneTerminal;  // 1çµ‚ç«¯
 
 private:
 	int id_;
 
 	static int total_id_;
-	static ZDDNode zero_t_; // 0I’[À‘Ì
-	static ZDDNode one_t_;  // 1I’[À‘Ì
+	static ZDDNode zero_t_; // 0çµ‚ç«¯å®Ÿä½“
+	static ZDDNode one_t_;  // 1çµ‚ç«¯å®Ÿä½“
 
 public:
-	static void Initialize() // static ƒRƒ“ƒXƒgƒ‰ƒNƒ^BZDDNode g—pŠJn’¼‘O‚ÉŒÄ‚Ño‚³‚ê‚é
+	static void Initialize() // static ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã€‚ZDDNode ä½¿ç”¨é–‹å§‹ç›´å‰ã«å‘¼ã³å‡ºã•ã‚Œã‚‹
 	{
 		ZeroTerminal = &zero_t_;
 		OneTerminal = &one_t_;
@@ -175,7 +175,7 @@ public:
 		ZDDNode* node = new ZDDNode();
 		node->deg = new int[number_of_vertices + 1];
 		node->comp = new int[number_of_vertices + 1];
-		// ”z—ñ‚ÌƒRƒs[‚ğ¶¬
+		// é…åˆ—ã®ã‚³ãƒ”ãƒ¼ã‚’ç”Ÿæˆ
 		for (int i = 1; i <= number_of_vertices; ++i)
 		{
 			node->deg[i] = deg[i];
@@ -503,7 +503,7 @@ private:
 	{
 		vector<int>& frontier = (*state->F[i]);
 
-		for (unsigned int j = 0; j < frontier.size(); ++j) { // ƒtƒƒ“ƒeƒBƒAã‚Ì’¸“_‚É‚Â‚¢‚Ä‚Ì‚İ”äŠr
+		for (unsigned int j = 0; j < frontier.size(); ++j) { // ãƒ•ãƒ­ãƒ³ãƒ†ã‚£ã‚¢ä¸Šã®é ‚ç‚¹ã«ã¤ã„ã¦ã®ã¿æ¯”è¼ƒ
 			int v = frontier[j];
 			if (node1->deg[v] != node2->deg[v]) {
 				return false;
@@ -522,25 +522,25 @@ int main()
 
 	Graph graph;
 
-	// ƒOƒ‰ƒti—×ÚƒŠƒXƒgj‚ğ•W€“ü—Í‚©‚ç“Ç‚İ‚Ş
+	// ã‚°ãƒ©ãƒ•ï¼ˆéš£æ¥ãƒªã‚¹ãƒˆï¼‰ã‚’æ¨™æº–å…¥åŠ›ã‹ã‚‰èª­ã¿è¾¼ã‚€
 	graph.ParseAdjListText(cin);
 
 	State state(&graph, 1, graph.GetNumberOfVertices());
 
-	// “ü—ÍƒOƒ‰ƒt‚Ì’¸“_‚Ì”‚Æ•Ó‚Ì”‚ğo—Í
+	// å…¥åŠ›ã‚°ãƒ©ãƒ•ã®é ‚ç‚¹ã®æ•°ã¨è¾ºã®æ•°ã‚’å‡ºåŠ›
 	cerr << "# of vertices = " << graph.GetNumberOfVertices()
 		<< ", # of edges = " << graph.GetEdgeList()->size() << endl;
 
-	ZDD* zdd = FrontierAlgorithm::Construct(&state); // ƒtƒƒ“ƒeƒBƒA–@‚É‚æ‚éZDD\’z
+	ZDD* zdd = FrontierAlgorithm::Construct(&state); // ãƒ•ãƒ­ãƒ³ãƒ†ã‚£ã‚¢æ³•ã«ã‚ˆã‚‹ZDDæ§‹ç¯‰
 
-	// ì¬‚³‚ê‚½ZDD‚Ìƒm[ƒh”‚Æ‰ğ‚Ì”‚ğo—Í
+	// ä½œæˆã•ã‚ŒãŸZDDã®ãƒãƒ¼ãƒ‰æ•°ã¨è§£ã®æ•°ã‚’å‡ºåŠ›
 	cerr << "# of nodes of ZDD = " << zdd->GetNumberOfNodes();
 	cerr << ", # of solutions = " << zdd->GetNumberOfSolutions() << endl;
 
-	// ZDD‚ğ•W€o—Í‚Éo—Í
+	// ZDDã‚’æ¨™æº–å‡ºåŠ›ã«å‡ºåŠ›
 	cout << zdd->GetZDDString();
 
-	// Œãˆ—
+	// å¾Œå‡¦ç†
 	delete zdd;
 	return 0;
 }
