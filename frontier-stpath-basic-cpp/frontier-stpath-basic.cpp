@@ -392,6 +392,7 @@ public:
 						ZDDNode* n_primeprime = Find(n_prime, (*N)[i + 1], i, state);
 						if (n_primeprime != NULL)
 						{
+							delete n_prime;
 							n_prime = n_primeprime;
 						}
 						else
