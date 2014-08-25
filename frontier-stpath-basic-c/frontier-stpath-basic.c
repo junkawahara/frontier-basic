@@ -442,13 +442,12 @@ void ZDDNodeArray_Add(ZDDNodeArray* node_array, ZDDNode* node)
 
 //******************************************************************************
 // ZDD 構造体
-// ZDD のノードが node_list_array に格納される。
-// レベル i のノードは node_list_array[i] に格納される。
-// i は1始まり。0は使わない。
-// すなわち，レベル i の j 番目のノードは node_list_array[i][j] で参照できる。
-// node_list_array[i] のサイズ，すなわちレベル i のノードの個数が
-// Nsize[i] に格納される。
-// node_list_array_size は node_list_array のサイズ（レベルが何個あるか）
+// ZDD のノードが node_array_list に格納される。
+// レベル i のノードは node_array_list[i] に格納される。
+// i は1始まり。0は使わない。i = m + 1 はダミー。
+// レベル i の j 番目のノードは node_list_array[i].array[j] で参照できる。
+// レベル i のノードの個数は node_list_array[i].array_size で参照できる。
+// node_array_list_size は node_array_list のサイズ
 typedef struct ZDD_ {
 	ZDDNodeArray* node_array_list;
 	int node_array_list_size;
@@ -695,7 +694,8 @@ ZDDNode* Find(ZDDNode* n_prime, ZDDNodeArray* node_array, int i, State* state)
 	return NULL;
 }
 
-// node1 と node2 が等価か調べる
+// node1 と node2 が等価か調べる。
+// 等価なら 1 を，そうでなければ 0 を返す。
 // i: レベル
 int IsEquivalent(ZDDNode* node1, ZDDNode* node2, int i, State* state)
 {
