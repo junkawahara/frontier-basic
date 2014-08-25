@@ -130,12 +130,10 @@ public:
 		OneTerminal = &one_t_;
 		ZeroTerminal->id_ = 0;
 		OneTerminal->id_ = 1;
-	}
-
-	ZDDNode()
-	{
-		deg = NULL;
-		comp = NULL;
+		ZeroTerminal->deg = NULL;
+		OneTerminal->deg = NULL;
+		ZeroTerminal->comp = NULL;
+		OneTerminal->comp = NULL;
 	}
 
 	~ZDDNode()
@@ -249,7 +247,7 @@ public:
 		for (unsigned int i = 0; i < graph->GetEdgeList()->size() + 1; ++i) {
 			delete F[i];
 		}
-		delete F;
+		delete[] F;
 	}
 
 private:
@@ -427,10 +425,12 @@ private:
 			int u = (y == 0 ? edge.src : edge.dest);
 			if ((u == state->s || u == state->t) && n_prime->deg[u] > 1)
 			{
+				delete n_prime;
 				return ZDDNode::ZeroTerminal;
 			}
 			else if ((u != state->s && u != state->t) && n_prime->deg[u] > 2)
 			{
+				delete n_prime;
 				return ZDDNode::ZeroTerminal;
 			}
 		}
@@ -441,18 +441,22 @@ private:
 			{
 				if ((u == state->s || u == state->t) && n_prime->deg[u] != 1)
 				{
+					delete n_prime;
 					return ZDDNode::ZeroTerminal;
 				}
 				else if ((u != state->s && u != state->t) && n_prime->deg[u] != 0 && n_prime->deg[u] != 2)
 				{
+					delete n_prime;
 					return ZDDNode::ZeroTerminal;
 				}
 			}
 		}
 		if (i == state->graph->GetEdgeList()->size())
 		{
+			delete n_prime;
 			return ZDDNode::OneTerminal;
 		}
+		delete n_prime;
 		return NULL;
 	}
 
