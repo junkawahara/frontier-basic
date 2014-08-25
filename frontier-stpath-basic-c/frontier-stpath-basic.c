@@ -141,11 +141,9 @@ void Graph_ParseAdjListText(Graph* graph, FILE* fin)
 void Graph_Print(Graph* graph, FILE* fout)
 {
 	int i;
-	for (i = 0; i < graph->edge_list_size; ++i)
-	{
+	for (i = 0; i < graph->edge_list_size; ++i) {
 		fprintf(fout, "(%d, %d)", graph->edge_list[i].src, graph->edge_list[i].dest);
-		if (i < graph->edge_list_size - 1)
-		{
+		if (i < graph->edge_list_size - 1) {
 			fprintf(fout, ", ");
 		}
 	}
@@ -212,8 +210,7 @@ ZDDNode* ZDDNode_CreateRootNode(int number_of_vertices)
 	new_node->comp = (int*)malloc(sizeof(int) * (number_of_vertices + 1));
 
 	// deg, comp を初期化
-	for (i = 1; i <= number_of_vertices; ++i)
-	{
+	for (i = 1; i <= number_of_vertices; ++i) {
 		new_node->deg[i] = 0;
 		new_node->comp[i] = i;
 	}
@@ -232,8 +229,7 @@ ZDDNode* ZDDNode_MakeCopy(ZDDNode* node, int number_of_vertices)
 	new_node->comp = (int*)malloc(sizeof(int)* (number_of_vertices + 1));
 
 	// deg, comp 配列をコピー
-	for (i = 1; i <= number_of_vertices; ++i)
-	{
+	for (i = 1; i <= number_of_vertices; ++i) {
 		new_node->deg[i] = node->deg[i];
 		new_node->comp[i] = node->comp[i];
 	}
@@ -245,12 +241,9 @@ ZDDNode* ZDDNode_MakeCopy(ZDDNode* node, int number_of_vertices)
 // 1 なら node の1枝側の子として child_node を設定
 void ZDDNode_SetChild(ZDDNode* node, ZDDNode* child_node, int child_num)
 {
-	if (child_num == 0)
-	{
+	if (child_num == 0) {
 		node->zero_child = child_node;
-	}
-	else
-	{
+	} else {
 		node->one_child = child_node;
 	}
 }
@@ -260,12 +253,9 @@ void ZDDNode_SetChild(ZDDNode* node, ZDDNode* child_node, int child_num)
 // 1 なら 1枝側の子を取得
 ZDDNode* ZDDNode_GetChild(ZDDNode* node, int child_num)
 {
-	if (child_num == 0)
-	{
+	if (child_num == 0) {
 		return node->zero_child;
-	}
-	else
-	{
+	} else {
 		return node->one_child;
 	}
 }
@@ -275,8 +265,7 @@ void ZDDNode_Print(ZDDNode* node, FILE* fout)
 {
 	fprintf(fout, "%d", node->id);
 
-	if (node->id >= 2)
-	{
+	if (node->id >= 2) {
 		fprintf(fout, ":%d,%d", node->zero_child->id, node->one_child->id);
 	}
 }
@@ -349,15 +338,13 @@ void State_ComputeFrontier(State* state)
 		int dest = edge.dest;
 
 		// i + 1 番目のフロンティア配列に src が含まれない（重複チェック）
-		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], src))
-		{
+		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], src)) {
 			// i + 1 番目のフロンティア配列に src を追加
 			state->F[i + 1][state->Fsize[i + 1]] = src;
 			++state->Fsize[i + 1];
 		}
 		// dest に対しても同様の処理
-		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], dest))
-		{
+		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], dest)) {
 			// i + 1 番目のフロンティア配列に dest を追加
 			state->F[i + 1][state->Fsize[i + 1]] = dest;
 			++state->Fsize[i + 1];
@@ -366,14 +353,12 @@ void State_ComputeFrontier(State* state)
 		// i + 1 番目以降の辺に，頂点 src が出現しないかどうかチェック。
 		// 出現しないなら，i + 1 番目のフロンティアから src が去るので，
 		// src を削除する。
-		if (!State_FindElement(i, src, edge_list, edge_list_size))
-		{
+		if (!State_FindElement(i, src, edge_list, edge_list_size)) {
 			// src を削除
 			Array_Remove(state->F[i + 1], &state->Fsize[i + 1], src);
 		}
 		// dest に対しても同様の処理
-		if (!State_FindElement(i, dest, edge_list, edge_list_size))
-		{
+		if (!State_FindElement(i, dest, edge_list, edge_list_size)) {
 			Array_Remove(state->F[i + 1], &state->Fsize[i + 1], dest);
 		}
 	}
@@ -384,10 +369,8 @@ void State_ComputeFrontier(State* state)
 int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list_size)
 {
 	int i;
-	for (i = edge_number + 1; i < edge_list_size; ++i)
-	{
-		if (value == edge_list[i].src || value == edge_list[i].dest)
-		{
+	for (i = edge_number + 1; i < edge_list_size; ++i) {
+		if (value == edge_list[i].src || value == edge_list[i].dest) {
 			return 1;
 		}
 	}
@@ -466,8 +449,7 @@ ZDD* ZDD_New(ZDDNodeArray* N, int size)
 void ZDD_Destruct(ZDD* zdd)
 {
 	int i;
-	for (i = 0; i < zdd->node_array_list_size; ++i)
-	{
+	for (i = 0; i < zdd->node_array_list_size; ++i) {
 		ZDDNodeArray_Destruct(&zdd->node_array_list[i]);
 	}
 	free(zdd->node_array_list);
@@ -479,8 +461,7 @@ int64 ZDD_GetNumberOfNodes(ZDD* zdd)
 {
 	int i;
 	int64 num = 0;
-	for (i = 1; i < zdd->node_array_list_size; ++i)
-	{
+	for (i = 1; i < zdd->node_array_list_size; ++i) {
 		num += zdd->node_array_list[i].array_size;
 	}
 	return num + 2; // + 2 は終端ノードの分
@@ -498,10 +479,8 @@ int64 ZDD_GetNumberOfSolutions(ZDD* zdd)
 	// 0枝側のノードの解の個数と，1枝側のノードの解の個数を足したものが，
 	// そのノードの解の個数になる。
 	// レベルが高いノードから低いノードに向けて計算する
-	for (i = zdd->node_array_list_size - 1; i >= 1; --i) // 各レベル i について
-	{
-		for (j = 0; j < zdd->node_array_list[i].array_size; ++j) // レベル i の各ノードについて
-		{
+	for (i = zdd->node_array_list_size - 1; i >= 1; --i) { // 各レベル i について
+		for (j = 0; j < zdd->node_array_list[i].array_size; ++j) { // レベル i の各ノードについて
 			// 0枝側の子ノード
 			ZDDNode* lo_node = ZDDNode_GetChild(zdd->node_array_list[i].array[j], 0);
 			// 1枝側の子ノード
@@ -551,25 +530,20 @@ ZDD* Construct(State* state)
 	ZDDNodeArray_Add(&N[1], ZDDNode_CreateRootNode(n));
 
 	for (i = 1; i <= m; ++i) { // 各辺 i についての処理
-		for (j = 0; j < N[i].array_size; ++j) // レベル i の各ノードについての処理
-		{
+		for (j = 0; j < N[i].array_size; ++j) { // レベル i の各ノードについての処理
 			n_hat = N[i].array[j]; // レベル i の j 番目のノード
 			for (x = 0; x <= 1; ++x) { // x枝（x = 0, 1）についての処理
 				n_prime = CheckTerminal(n_hat, i, x, state);
 
-				if (n_prime == NULL) // x枝の先が0終端でも1終端でもないと判定された
-				{
+				if (n_prime == NULL) { // x枝の先が0終端でも1終端でもないと判定された
 					n_prime = ZDDNode_MakeCopy(n_hat, n);
 					UpdateInfo(n_prime, i, x, state);
 					n_primeprime = Find(n_prime, &N[i + 1], i, state);
-					if (n_primeprime != NULL)
-					{
+					if (n_primeprime != NULL) {
 						ZDDNode_Destruct(n_prime); // n_prime を破棄
 						free(n_prime);
 						n_prime = n_primeprime;
-					}
-					else
-					{
+					} else {
 						ZDDNode_SetNextId(n_prime);
 						ZDDNodeArray_Add(&N[i + 1], n_prime);
 					}
@@ -586,54 +560,46 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 {
 	int y, u;
 	Edge edge = state->graph->edge_list[i - 1];
-	if (x == 1)
-	{
-		if (n_hat->comp[edge.src] == n_hat->comp[edge.dest])
-		{
+	if (x == 1) {
+		if (n_hat->comp[edge.src] == n_hat->comp[edge.dest]) { // サイクルが生じる
 			return ZeroTerminal;
 		}
 	}
 	ZDDNode* n_prime = ZDDNode_MakeCopy(n_hat, state->graph->number_of_vertices);
 	UpdateInfo(n_prime, i, x, state);
 
-	for (y = 0; y <= 1; ++y)
-	{
+	for (y = 0; y <= 1; ++y) { // 1回目は src に関する処理，2回目は dest に関する処理
 		u = (y == 0 ? edge.src : edge.dest);
-		if ((u == state->s || u == state->t) && n_prime->deg[u] > 1)
-		{
+		// 始点，終点の次数が1を超える
+		if ((u == state->s || u == state->t) && n_prime->deg[u] > 1) {
 			ZDDNode_Destruct(n_prime);
 			free(n_prime);
 			return ZeroTerminal;
-		}
-		else if ((u != state->s && u != state->t) && n_prime->deg[u] > 2)
-		{
+		// 始点，終点以外の次数が1を超える
+		} else if ((u != state->s && u != state->t) && n_prime->deg[u] > 2) { 
 			ZDDNode_Destruct(n_prime);
 			free(n_prime);
 			return ZeroTerminal;
 		}
 	}
-	for (y = 0; y <= 1; ++y)
-	{
+	for (y = 0; y <= 1; ++y) { // 1回目は src に関する処理，2回目は dest に関する処理
 		u = (y == 0 ? edge.src : edge.dest);
-		if (!Array_Contains(state->F[i], state->Fsize[i], u))
-		{
-			if ((u == state->s || u == state->t) && n_prime->deg[u] != 1)
-			{
+		if (!Array_Contains(state->F[i], state->Fsize[i], u)) {
+			// 始点，終点の次数が1ではない
+			if ((u == state->s || u == state->t) && n_prime->deg[u] != 1) {
 				ZDDNode_Destruct(n_prime);
 				free(n_prime);
 				return ZeroTerminal;
-			}
-			else if ((u != state->s && u != state->t) &&
-				n_prime->deg[u] != 0 && n_prime->deg[u] != 2)
-			{
+			// 始点，終点以外の次数が0,2ではない
+			} else if ((u != state->s && u != state->t) &&
+				n_prime->deg[u] != 0 && n_prime->deg[u] != 2) {
 				ZDDNode_Destruct(n_prime);
 				free(n_prime);
 				return ZeroTerminal;
 			}
 		}
 	}
-	if (i == state->graph->edge_list_size)
-	{
+	if (i == state->graph->edge_list_size) { // 最後の辺の処理
 		ZDDNode_Destruct(n_prime);
 		free(n_prime);
 		return OneTerminal;
@@ -648,19 +614,19 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 {
 	int y, j, u, c_min, c_max;
 	Edge edge = state->graph->edge_list[i - 1];
-	for (y = 0; y <= 1; ++y)
-	{
+	for (y = 0; y <= 1; ++y) { // 1回目は src に関する処理，2回目は dest に関する処理
 		u = (y == 0 ? edge.src : edge.dest);
-		if (!Array_Contains(state->F[i - 1], state->Fsize[i - 1], u))
-		{
+		// u がフロンティアに新たに入る
+		if (!Array_Contains(state->F[i - 1], state->Fsize[i - 1], u)) {
 			n_hat->deg[u] = 0;
 			n_hat->comp[u] = u;
 		}
 	}
-	if (x == 1)
-	{
-		++n_hat->deg[edge.src];
-		++n_hat->deg[edge.dest];
+	if (x == 1) {
+		++n_hat->deg[edge.src];  // src の次数を1増やす
+		++n_hat->deg[edge.dest]; // dest の次数を1増やす
+
+		// c_min と c_max の連結成分を結合させる（c_min にする）
 		c_min = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ?
 			n_hat->comp[edge.src] : n_hat->comp[edge.dest]);
 		c_max = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ?
@@ -668,7 +634,7 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 
 		for (j = 0; j < state->Fsize[i]; ++j) {
 			u = state->F[i][j];
-			if (n_hat->comp[u] == c_max)
+			if (n_hat->comp[u] == c_max) // c_max -> c_min にする
 			{
 				n_hat->comp[u] = c_min;
 			}
