@@ -71,9 +71,7 @@ void Graph_ParseAdjListText(Graph* graph, FILE* fin)
 	int x, e;
 
 	graph->number_of_vertices = 0;
-	//edge_list_.clear();
 	graph->edge_list_size = 0;
-
 	
 	while (fgets(buff, sizeof(buff), fin) != NULL) {
 		++graph->number_of_vertices;
@@ -147,6 +145,16 @@ void ZDDNode_Initialize()
 	OneTerminal = &one_t;
 	ZeroTerminal->id = 0;
 	OneTerminal->id = 1;
+	ZeroTerminal->deg = NULL;
+	OneTerminal->deg = NULL;
+	ZeroTerminal->comp = NULL;
+	OneTerminal->comp = NULL;
+}
+
+void ZDDNode_Destruct(ZDDNode* node)
+{
+	free(node->comp);
+	free(node->deg);
 }
 
 void ZDDNode_SetNextId(ZDDNode* node)
@@ -247,6 +255,18 @@ State* State_New(Graph* g, int start, int end)
 	return state;
 }
 
+void State_Destruct(State* state)
+{
+	int i;
+	for (i = 0; i < Graph_GetEdgeListSize(state->graph) + 1; ++i) {
+		free(state->F[i]);
+	}
+	free(state->F);
+	state->F = NULL;
+	free(state->Fsize);
+	state->Fsize = NULL;
+}
+
 int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list_size);
 
 void State_ComputeFrontier(State* state)
@@ -321,6 +341,24 @@ ZDD* ZDD_New(ZDDNode*** nlistarray, int nlistarray_size, int* Ns)
 	zdd->node_list_array_size = nlistarray_size;
 	zdd->Nsize = Ns;
 	return zdd;
+}
+
+void ZDD_Destruct(ZDD* zdd)
+{
+	int i, j;
+	for (i = zdd->node_list_array_size - 1; i >= 1; --i)
+	{
+		for (j = 0; j < zdd->Nsize[i]; ++j)
+		{
+			ZDDNode_Destruct(zdd->node_list_array[i][j]);
+			free(zdd->node_list_array[i][j]);
+		}
+		free(zdd->node_list_array[i]);
+	}
+	free(zdd->node_list_array);
+	zdd->node_list_array = NULL;
+	free(zdd->Nsize);
+	zdd->Nsize = NULL;
 }
 
 int64 ZDD_GetNumberOfNodes(ZDD* zdd)
@@ -403,6 +441,8 @@ ZDD* Construct(State* state)
 					ZDDNode* n_primeprime = Find(n_prime, N[i + 1], Nsize[i + 1], i, state);
 					if (n_primeprime != NULL)
 					{
+						ZDDNode_Destruct(n_prime);
+						free(n_prime);
 						n_prime = n_primeprime;
 					}
 					else
@@ -443,10 +483,14 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 		u = (y == 0 ? edge.src : edge.dest);
 		if ((u == state->s || u == state->t) && n_prime->deg[u] > 1)
 		{
+			ZDDNode_Destruct(n_prime);
+			free(n_prime);
 			return ZeroTerminal;
 		}
 		else if ((u != state->s && u != state->t) && n_prime->deg[u] > 2)
 		{
+			ZDDNode_Destruct(n_prime);
+			free(n_prime);
 			return ZeroTerminal;
 		}
 	}
@@ -457,18 +501,26 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 		{
 			if ((u == state->s || u == state->t) && n_prime->deg[u] != 1)
 			{
+				ZDDNode_Destruct(n_prime);
+				free(n_prime);
 				return ZeroTerminal;
 			}
 			else if ((u != state->s && u != state->t) && n_prime->deg[u] != 0 && n_prime->deg[u] != 2)
 			{
+				ZDDNode_Destruct(n_prime);
+				free(n_prime);
 				return ZeroTerminal;
 			}
 		}
 	}
 	if (i == Graph_GetEdgeListSize(state->graph))
 	{
+		ZDDNode_Destruct(n_prime);
+		free(n_prime);
 		return OneTerminal;
 	}
+	ZDDNode_Destruct(n_prime);
+	free(n_prime);
 	return NULL;
 }
 
@@ -557,6 +609,9 @@ int main()
 	ZDD_PrintZDD(zdd, stdout);
 
 	// 後処理
+	ZDD_Destruct(zdd);
 	free(zdd);
+	State_Destruct(state);
+	free(state);
 	return 0;
 }
