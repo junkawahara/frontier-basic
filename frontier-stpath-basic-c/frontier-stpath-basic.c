@@ -574,7 +574,7 @@ ZDD* Construct(State* state)
 						ZDDNodeArray_Add(&N[i + 1], n_prime);
 					}
 				}
-				ZDDNode_SetChild(n_hat, n_prime, x); // node に
+				ZDDNode_SetChild(n_hat, n_prime, x);
 			}
 		}
 	}
@@ -676,7 +676,7 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 	}
 }
 
-// ノード配列 N_i の中に，n_prime と等価なノードが存在するか調べる
+// ノード配列 N_i の中に，n_prime と等価なノードが存在するか調べる。
 // 等価なノードが存在すればそれを返す。存在しなければ NULL を返す。
 // N_i_size: N_i の大きさ（要素数）
 // i: レベル
