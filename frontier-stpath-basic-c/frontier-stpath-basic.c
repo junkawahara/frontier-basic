@@ -30,6 +30,9 @@ typedef long long int int64; // 64ビット整数型
 // 入力グラフの辺の数の最大値
 #define MAX_GRAPH_EDGE_LIST_SIZE 1024
 
+// ノード配列の初期サイズ（ノード配列の大きさは必要に応じて拡張される）
+#define INITIAL_NODE_ARRAY_SIZE 1024
+
 //******************************************************************************
 // 補助関数
 
@@ -392,6 +395,52 @@ int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list
 }
 
 //******************************************************************************
+// ZDDNodeArray 構造体
+
+typedef struct ZDDNodeArray_ {
+	ZDDNode** array; // 配列
+	int array_size;  // 配列サイズ
+	int capacity;    // 配列のために確保しているメモリ領域の大きさ
+} ZDDNodeArray;
+
+// ZDDNodeArray を初期化する
+void ZDDNodeArray_Initialize(ZDDNodeArray* node_array)
+{
+	node_array->capacity = INITIAL_NODE_ARRAY_SIZE;
+	node_array->array_size = 0;
+	node_array->array = (ZDDNode**)malloc(sizeof(ZDDNode*) * node_array->capacity);
+}
+
+// ZDDNodeArray 構造体を破棄する際に呼ばれなければならない
+void ZDDNodeArray_Destruct(ZDDNodeArray* node_array)
+{
+	int i;
+	for (i = 0; i < node_array->array_size; ++i) {
+		ZDDNode_Destruct(node_array->array[i]);
+		free(node_array->array[i]);
+	}
+	free(node_array->array);
+	node_array->array = NULL;
+}
+
+// ノード配列の capacity を 2 倍に拡張する
+void ZDDNodeArray_Expand(ZDDNodeArray* node_array)
+{
+	node_array->capacity *= 2;
+	node_array->array = (ZDDNode**)realloc(node_array->array, sizeof(ZDDNode*)* node_array->capacity);
+}
+
+// node を node_array に加える（必要に応じてメモリ領域を拡張する）
+void ZDDNodeArray_Add(ZDDNodeArray* node_array, ZDDNode* node)
+{
+	node_array->array[node_array->array_size] = node;
+	++node_array->array_size;
+	if (node_array->array_size >= node_array->capacity) {
+		ZDDNodeArray_Expand(node_array);
+	}
+}
+
+//******************************************************************************
 // ZDD 構造体
 // ZDD のノードが node_list_array に格納される。
 // レベル i のノードは node_list_array[i] に格納される。
@@ -401,38 +450,29 @@ int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list
 // Nsize[i] に格納される。
 // node_list_array_size は node_list_array のサイズ（レベルが何個あるか）
 typedef struct ZDD_ {
-	ZDDNode*** node_list_array; // ZDDNode ポインタの2次元配列
-	int node_list_array_size;   // node_list_array のサイズ
-	int* Nsize; // node_list_array[i] のサイズ
+	ZDDNodeArray* node_array_list;
+	int node_array_list_size;
 } ZDD;
 
 // ZDD構造体を動的に生成し，初期化して返す。
-ZDD* ZDD_New(ZDDNode*** nlistarray, int nlistarray_size, int* Ns)
+ZDD* ZDD_New(ZDDNodeArray* N, int size)
 {
 	ZDD* zdd = (ZDD*)malloc(sizeof(ZDD));
-	zdd->node_list_array = nlistarray;
-	zdd->node_list_array_size = nlistarray_size;
-	zdd->Nsize = Ns;
+	zdd->node_array_list = N;
+	zdd->node_array_list_size = size;
 	return zdd;
 }
 
 // ZDD 構造体を破棄する際に呼ばれなければならない
 void ZDD_Destruct(ZDD* zdd)
 {
-	int i, j;
-	for (i = zdd->node_list_array_size - 1; i >= 1; --i)
+	int i;
+	for (i = 0; i < zdd->node_array_list_size; ++i)
 	{
-		for (j = 0; j < zdd->Nsize[i]; ++j)
-		{
-			ZDDNode_Destruct(zdd->node_list_array[i][j]);
-			free(zdd->node_list_array[i][j]);
-		}
-		free(zdd->node_list_array[i]);
+		ZDDNodeArray_Destruct(&zdd->node_array_list[i]);
 	}
-	free(zdd->node_list_array);
-	zdd->node_list_array = NULL;
-	free(zdd->Nsize);
-	zdd->Nsize = NULL;
+	free(zdd->node_array_list);
+	zdd->node_array_list = NULL;
 }
 
 // ZDDのノード数を返す
@@ -440,9 +480,9 @@ int64 ZDD_GetNumberOfNodes(ZDD* zdd)
 {
 	int i;
 	int64 num = 0;
-	for (i = 1; i < zdd->node_list_array_size; ++i)
+	for (i = 1; i < zdd->node_array_list_size; ++i)
 	{
-		num += zdd->Nsize[i];
+		num += zdd->node_array_list[i].array_size;
 	}
 	return num + 2; // + 2 は終端ノードの分
 }
@@ -459,28 +499,28 @@ int64 ZDD_GetNumberOfSolutions(ZDD* zdd)
 	// 0枝側のノードの解の個数と，1枝側のノードの解の個数を足したものが，
 	// そのノードの解の個数になる。
 	// レベルが高いノードから低いノードに向けて計算する
-	for (i = zdd->node_list_array_size - 1; i >= 1; --i) // 各レベル i について
+	for (i = zdd->node_array_list_size - 1; i >= 1; --i) // 各レベル i について
 	{
-		for (j = 0; j < zdd->Nsize[i]; ++j) // レベル i の各ノードについて
+		for (j = 0; j < zdd->node_array_list[i].array_size; ++j) // レベル i の各ノードについて
 		{
 			// 0枝側の子ノード
-			ZDDNode* lo_node = ZDDNode_GetChild(zdd->node_list_array[i][j], 0);
+			ZDDNode* lo_node = ZDDNode_GetChild(zdd->node_array_list[i].array[j], 0);
 			// 1枝側の子ノード
-			ZDDNode* hi_node = ZDDNode_GetChild(zdd->node_list_array[i][j], 1);
-			zdd->node_list_array[i][j]->sol = lo_node->sol + hi_node->sol;
+			ZDDNode* hi_node = ZDDNode_GetChild(zdd->node_array_list[i].array[j], 1);
+			zdd->node_array_list[i].array[j]->sol = lo_node->sol + hi_node->sol;
 		}
 	}
-	return zdd->node_list_array[1][0]->sol; // 根ノード
+	return zdd->node_array_list[1].array[0]->sol; // 根ノード
 }
 
 // ZDDを出力
 void ZDD_PrintZDD(ZDD* zdd, FILE* fout)
 {
 	int i, j;
-	for (i = 1; i < zdd->node_list_array_size - 1; ++i) {
+	for (i = 1; i < zdd->node_array_list_size - 1; ++i) {
 		fprintf(fout, "#%d\r\n", i);
-		for (j = 0; j < zdd->Nsize[i]; ++j) {
-			ZDDNode_Print(zdd->node_list_array[i][j], fout);
+		for (j = 0; j < zdd->node_array_list[i].array_size; ++j) {
+			ZDDNode_Print(zdd->node_array_list[i].array[j], fout);
 			fprintf(fout, "\r\n");
 		}
 	}
@@ -491,7 +531,7 @@ void ZDD_PrintZDD(ZDD* zdd, FILE* fout)
 
 ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state);
 void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state);
-ZDDNode* Find(ZDDNode* n_prime, ZDDNode** N_i, int N_i_size, int i, State* state);
+ZDDNode* Find(ZDDNode* n_prime, ZDDNodeArray* node_array, int i, State* state);
 int IsEquivalent(ZDDNode* node1, ZDDNode* node2, int i, State* state);
 
 // フロンティア法を実行し，ZDDを作成して返す
@@ -504,24 +544,17 @@ ZDD* Construct(State* state)
 	int n = state->graph->number_of_vertices;  // 頂点の数
 
 	// 生成したノードを格納する配列
-	ZDDNode*** N = (ZDDNode***)malloc(sizeof(ZDDNode**) * (m + 2)); 
-	int* Nsize = (int*)malloc(sizeof(int) * (m + 2)); // 格納したノードの数
-	int* Ncapacity = (int*)malloc(sizeof(int)* (m + 2)); // N を格納できる要素のサイズ
+	ZDDNodeArray* N = (ZDDNodeArray*)malloc(sizeof(ZDDNodeArray) * (m + 2));
 	for (i = 0; i < m + 2; ++i) {
-		Nsize[i] = 0;
-		Ncapacity[i] = 1024; // 格納できる要素の初期値（後で拡張される）
+		ZDDNodeArray_Initialize(&N[i]);
 	}
-	N[1] = (ZDDNode**)malloc(sizeof(ZDDNode*) * Ncapacity[1]);
 	// 根ノードを作成して N[1] に追加
-	N[1][0] = ZDDNode_CreateRootNode(n);
-	++Nsize[1];
+	ZDDNodeArray_Add(&N[1], ZDDNode_CreateRootNode(n));
 
 	for (i = 1; i <= m; ++i) { // 各辺 i についての処理
-		N[i + 1] = (ZDDNode**)malloc(sizeof(ZDDNode*) * Ncapacity[i + 1]);
-
-		for (j = 0; j < Nsize[i]; ++j) // レベル i の各ノードについての処理
+		for (j = 0; j < N[i].array_size; ++j) // レベル i の各ノードについての処理
 		{
-			n_hat = N[i][j]; // レベル i の j 番目のノード
+			n_hat = N[i].array[j]; // レベル i の j 番目のノード
 			for (x = 0; x <= 1; ++x) { // x枝（x = 0, 1）についての処理
 				n_prime = CheckTerminal(n_hat, i, x, state);
 
@@ -529,7 +562,7 @@ ZDD* Construct(State* state)
 				{
 					n_prime = ZDDNode_MakeCopy(n_hat, n);
 					UpdateInfo(n_prime, i, x, state);
-					n_primeprime = Find(n_prime, N[i + 1], Nsize[i + 1], i, state);
+					n_primeprime = Find(n_prime, &N[i + 1], i, state);
 					if (n_primeprime != NULL)
 					{
 						ZDDNode_Destruct(n_prime); // n_prime を破棄
@@ -539,22 +572,14 @@ ZDD* Construct(State* state)
 					else
 					{
 						ZDDNode_SetNextId(n_prime);
-						N[i + 1][Nsize[i + 1]] = n_prime; // N[i + 1] にノードを追加
-						++Nsize[i + 1];
-						// size が capacity を超えたら
-						if (Nsize[i + 1] >= Ncapacity[i + 1]) {
-							Ncapacity[i + 1] *= 2; // capacity を 2 倍にして
-							N[i + 1] = realloc(N[i + 1],
-								sizeof(ZDDNode*) * Ncapacity[i + 1]); // 再割り当て
-						}
+						ZDDNodeArray_Add(&N[i + 1], n_prime);
 					}
 				}
 				ZDDNode_SetChild(n_hat, n_prime, x); // node に
 			}
 		}
 	}
-	free(Ncapacity);
-	return ZDD_New(N, m + 2, Nsize); // ZDDを作って返す
+	return ZDD_New(N, m + 2); // ZDDを作って返す
 }
 
 // アルゴリズムの中身については文献参照
@@ -656,11 +681,11 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 // 等価なノードが存在すればそれを返す。存在しなければ NULL を返す。
 // N_i_size: N_i の大きさ（要素数）
 // i: レベル
-ZDDNode* Find(ZDDNode* n_prime, ZDDNode** N_i, int N_i_size, int i, State* state)
+ZDDNode* Find(ZDDNode* n_prime, ZDDNodeArray* node_array, int i, State* state)
 {
 	int j;
-	for (j = 0; j < N_i_size; ++j) {
-		ZDDNode* n_primeprime = N_i[j];
+	for (j = 0; j < node_array->array_size; ++j) {
+		ZDDNode* n_primeprime = node_array->array[j];
 
 		// n_prime と n_primeprime が等価かどうか判定
 		if (IsEquivalent(n_prime, n_primeprime, i, state)) {
