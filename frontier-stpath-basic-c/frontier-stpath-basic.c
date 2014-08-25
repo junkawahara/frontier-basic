@@ -22,11 +22,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef long long int int64;
+// main 関数は本コードの末尾にある。
+// アルゴリズム本体は Construct 関数である。
 
+typedef long long int int64; // 64ビット整数型
+
+// 入力グラフの辺の数の最大値
 #define MAX_GRAPH_EDGE_LIST_SIZE 1024
 
-static int Contains(int* vec, int size, int element)
+//******************************************************************************
+// 補助関数
+
+// 大きさが size の配列 vec に，element が含まれるかどうかを判定。
+// 含まれるなら 1 を，含まれないなら 0 を返す。
+static int Array_Contains(int* vec, int size, int element)
 {
 	int i;
 	for (i = 0; i < size; ++i) {
@@ -37,7 +46,9 @@ static int Contains(int* vec, int size, int element)
 	return 0;
 }
 
-static void Remove(int* vec, int* size, int element)
+// 大きさが size の配列 vec の中から element を全て削除する。
+// size はポインタで与える。関数の実行後，size には削除後の配列の大きさが格納される。
+static void Array_Remove(int* vec, int* size, int element)
 {
 	int i, j;
 	for (i = *size - 1; i >= 0; --i) {
@@ -50,37 +61,22 @@ static void Remove(int* vec, int* size, int element)
 	}
 }
 
-/// <summary>
-/// グラフの辺を表す構造体
-/// </summary>
+//******************************************************************************
+// Edge 構造体
+// グラフの辺を表す。
 typedef struct Edge_ {
-	int src;
-	int dest;
+	int src;  // 辺の始点
+	int dest; // 辺の終点
 } Edge;
 
-/// <summary>
-/// グラフを表すクラス
-/// </summary>
+//******************************************************************************
+// Graph 構造体
+// （無向）グラフを表す。グラフは辺のリストによって表される。
 typedef struct Graph_ {
-	int number_of_vertices;
-	Edge edge_list[MAX_GRAPH_EDGE_LIST_SIZE];
-	int edge_list_size;
+	int number_of_vertices; // 頂点の数
+	Edge edge_list[MAX_GRAPH_EDGE_LIST_SIZE]; // 辺リスト
+	int edge_list_size; // 辺リストの要素の数
 } Graph;
-
-int Graph_GetNumberOfVertices(Graph* graph)
-{
-	return graph->number_of_vertices;
-}
-
-Edge* Graph_GetEdgeList(Graph* graph)
-{
-	return graph->edge_list;
-}
-
-int Graph_GetEdgeListSize(Graph* graph)
-{
-	return graph->edge_list_size;
-}
 
 // ファイルから隣接リスト形式のグラフを読み込む
 void Graph_ParseAdjListText(Graph* graph, FILE* fin)
@@ -96,30 +92,39 @@ void Graph_ParseAdjListText(Graph* graph, FILE* fin)
 	while (fgets(buff, sizeof(buff), fin) != NULL) {
 		++graph->number_of_vertices;
 
+		// 以下では，buff に格納されている "1 4 6 10 15" などの
+		// 空白区切りの数値テキストをパースする。strtok 関数を用いる。
+		// strtok 関数を呼び出すたびに tp は数値テキストの先頭を指すようになる。
+		// atoi 関数によってそれを数値に変換する。
 		tp = strtok(buff, " ");
-
 		while (tp != NULL) {
 			x = atoi(tp);
 			Edge edge;
+			// src < dest になるように格納
 			edge.src = (graph->number_of_vertices < x ? graph->number_of_vertices : x);
 			edge.dest = (graph->number_of_vertices < x ? x : graph->number_of_vertices);
 
-			if (max_vertex < x) {
-				max_vertex = x;
-			}
-
-			for (e = 0; e < graph->edge_list_size; ++e) {
-				if (graph->edge_list[e].src == edge.src && graph->edge_list[e].dest == edge.dest) {
-					break;
+			if (edge.src != edge.dest) { // src == dest のものは無視
+				if (max_vertex < x) {
+					max_vertex = x;
 				}
-			}
-			if (e >= graph->edge_list_size) {
-				graph->edge_list[graph->edge_list_size] = edge;
-				++graph->edge_list_size;
-				if (graph->edge_list_size >= MAX_GRAPH_EDGE_LIST_SIZE) {
-					fprintf(stderr, "Error: The number of edges must be smaller than %d.\n",
-						MAX_GRAPH_EDGE_LIST_SIZE);
-					exit(1);
+
+				for (e = 0; e < graph->edge_list_size; ++e) { // 重複除去
+					if (graph->edge_list[e].src == edge.src
+						&& graph->edge_list[e].dest == edge.dest) {
+						break;
+					}
+				}
+				if (e >= graph->edge_list_size) { // 重複が見つからない
+					graph->edge_list[graph->edge_list_size] = edge; // 辺リストに追加
+					++graph->edge_list_size;
+					// 辺の数が制限を超えた
+					if (graph->edge_list_size >= MAX_GRAPH_EDGE_LIST_SIZE) { 
+						fprintf(stderr, "Error: The number of edges must be"
+							"smaller than %d.\n",
+							MAX_GRAPH_EDGE_LIST_SIZE);
+						exit(1);
+					}
 				}
 			}
 			tp = strtok(NULL, " ");
@@ -130,7 +135,7 @@ void Graph_ParseAdjListText(Graph* graph, FILE* fin)
 	}
 }
 
-void Graph_ToString(Graph* graph, FILE* fout)
+void Graph_Print(Graph* graph, FILE* fout)
 {
 	int i;
 	for (i = 0; i < graph->edge_list_size; ++i)
@@ -143,23 +148,29 @@ void Graph_ToString(Graph* graph, FILE* fout)
 	}
 }
 
+//******************************************************************************
+// ZDDNode 構造体
+// ZDDノードを表す。
 typedef struct ZDDNode_ {
-	int* deg;
-	int* comp;
-	int64 sol;
-	struct ZDDNode_* zero_child;
-	struct ZDDNode_* one_child;
-	int id;
+	int* deg;  // deg 配列（フロンティア法アルゴリズムの文献参照）
+	int* comp; // comp 配列（フロンティア法アルゴリズムの文献参照）
+	int64 sol; // 解の数の計算時に使用する変数
+	struct ZDDNode_* zero_child; // 0枝側の子ノード
+	struct ZDDNode_* one_child;  // 1枝側の子ノード
+	int id; // ノードID。0終端は0，1終端は1，それ以外のノードは2から始まる整数
+	int dummy; // コンパイラの警告を避ける
 } ZDDNode;
 
 static ZDDNode* ZeroTerminal; // 0終端
 static ZDDNode* OneTerminal;  // 1終端
 
-static int total_id = 2;
+static int total_id = 2; // 次に与えるノードID
 static ZDDNode zero_t; // 0終端実体
 static ZDDNode one_t;  // 1終端実体
 
-void ZDDNode_Initialize()
+// ZDD, ZDDNode を使用するときはこの関数を必ず呼ぶこと。
+// 終端ノードの初期化を行う。
+void ZDDNode_Initialize(void)
 {
 	ZeroTerminal = &zero_t;
 	OneTerminal = &one_t;
@@ -171,31 +182,33 @@ void ZDDNode_Initialize()
 	OneTerminal->comp = NULL;
 }
 
+// ZDDNode 構造体の使用を終了したときはこの関数を必ず呼ぶこと。
 void ZDDNode_Destruct(ZDDNode* node)
 {
 	free(node->comp);
 	free(node->deg);
 }
 
+// ノードに次のIDを振る
 void ZDDNode_SetNextId(ZDDNode* node)
 {
 	node->id = total_id;
 	++total_id;
 }
 
-int ZDDNode_GetId(ZDDNode* node)
-{
-	return node->id;
-}
-
+// 根(root)ノードを作成して返す。
+// number_of_vertices: 入力グラフの頂点の数
 ZDDNode* ZDDNode_CreateRootNode(int number_of_vertices)
 {
 	int i;
 	ZDDNode* new_node = (ZDDNode*)malloc(sizeof(ZDDNode));
-	ZDDNode_SetNextId(new_node);
+	ZDDNode_SetNextId(new_node); // IDを振る
+	// deg配列を動的に作成
 	new_node->deg = (int*)malloc(sizeof(int) * (number_of_vertices + 1));
+	// comp配列を動的に作成
 	new_node->comp = (int*)malloc(sizeof(int) * (number_of_vertices + 1));
 
+	// deg, comp を初期化
 	for (i = 1; i <= number_of_vertices; ++i)
 	{
 		new_node->deg[i] = 0;
@@ -204,13 +217,18 @@ ZDDNode* ZDDNode_CreateRootNode(int number_of_vertices)
 	return new_node;
 }
 
+// ZDDノードをコピーして返す。
+// number_of_vertices: 入力グラフの頂点の数
 ZDDNode* ZDDNode_MakeCopy(ZDDNode* node, int number_of_vertices)
 {
 	int i;
 	ZDDNode* new_node = (ZDDNode*)malloc(sizeof(ZDDNode));
+	// deg配列を動的に作成
 	new_node->deg = (int*)malloc(sizeof(int)* (number_of_vertices + 1));
+	// comp配列を動的に作成
 	new_node->comp = (int*)malloc(sizeof(int)* (number_of_vertices + 1));
-	// 配列のコピーを生成
+
+	// deg, comp 配列をコピー
 	for (i = 1; i <= number_of_vertices; ++i)
 	{
 		new_node->deg[i] = node->deg[i];
@@ -219,6 +237,9 @@ ZDDNode* ZDDNode_MakeCopy(ZDDNode* node, int number_of_vertices)
 	return new_node;
 }
 
+// ノードに子を設定
+// child_num: 0 なら node の0枝側の子として child_node を設定
+// 1 なら node の1枝側の子として child_node を設定
 void ZDDNode_SetChild(ZDDNode* node, ZDDNode* child_node, int child_num)
 {
 	if (child_num == 0)
@@ -231,6 +252,9 @@ void ZDDNode_SetChild(ZDDNode* node, ZDDNode* child_node, int child_num)
 	}
 }
 
+// ノードの子ノードを取得
+// child_num: 0 なら node の0枝側の子を取得
+// 1 なら 1枝側の子を取得
 ZDDNode* ZDDNode_GetChild(ZDDNode* node, int child_num)
 {
 	if (child_num == 0)
@@ -243,7 +267,8 @@ ZDDNode* ZDDNode_GetChild(ZDDNode* node, int child_num)
 	}
 }
 
-void ZDDNode_ToString(ZDDNode* node, FILE* fout)
+// ZDDノードを出力する
+void ZDDNode_Print(ZDDNode* node, FILE* fout)
 {
 	fprintf(fout, "%d", node->id);
 
@@ -253,16 +278,20 @@ void ZDDNode_ToString(ZDDNode* node, FILE* fout)
 	}
 }
 
+//******************************************************************************
+// State 構造体
+
 typedef struct State_ {
-	Graph* graph;
-	int s;
-	int t;
-	int** F;
-	int* Fsize;
+	Graph* graph; // 入力グラフ
+	int s; // s-tパスの始点の頂点番号
+	int t; // s-tパスの始点の頂点番号
+	int** F; // フロンティアを格納する2次元配列
+	int* Fsize; // フロンティアのi番目の大きさを格納する配列
 } State;
 
 void State_ComputeFrontier(State* state);
 
+// State 構造体を動的に生成し，初期化して返す
 State* State_New(Graph* g, int start, int end)
 {
 	State* state;
@@ -271,14 +300,15 @@ State* State_New(Graph* g, int start, int end)
 	state->s = start;
 	state->t = end;
 	state->graph = g;
-	State_ComputeFrontier(state);
+	State_ComputeFrontier(state); // フロンティアを計算する
 	return state;
 }
 
+// State 構造体を破棄する際に呼ばれなければならない
 void State_Destruct(State* state)
 {
 	int i;
-	for (i = 0; i < Graph_GetEdgeListSize(state->graph) + 1; ++i) {
+	for (i = 0; i < state->graph->edge_list_size + 1; ++i) {
 		free(state->F[i]);
 	}
 	free(state->F);
@@ -289,12 +319,13 @@ void State_Destruct(State* state)
 
 int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list_size);
 
+// フロンティアの計算
 void State_ComputeFrontier(State* state)
 {
 	int i, j, n;
-	Edge* edge_list = Graph_GetEdgeList(state->graph);
-	int edge_list_size = Graph_GetEdgeListSize(state->graph);
-	n = Graph_GetNumberOfVertices(state->graph);
+	Edge* edge_list = state->graph->edge_list;
+	int edge_list_size = state->graph->edge_list_size;
+	n = state->graph->number_of_vertices;
 
 	state->F = (int**)malloc(sizeof(int*) * (edge_list_size + 1));
 	state->Fsize = (int*)malloc(sizeof(int) * (edge_list_size + 1));
@@ -304,6 +335,7 @@ void State_ComputeFrontier(State* state)
 	for (i = 0; i < edge_list_size; ++i) {
 		state->F[i + 1] = (int*)malloc(sizeof(int) * (n + 1));
 		state->Fsize[i + 1] = 0;
+		// i 番目のフロンティア配列の要素すべてを，i + 1 番目のフロンティア配列に追加する
 		for (j = 0; j < state->Fsize[i]; ++j) {
 			state->F[i + 1][state->Fsize[i + 1]] = state->F[i][j];
 			++state->Fsize[i + 1];
@@ -313,28 +345,39 @@ void State_ComputeFrontier(State* state)
 		int src = edge.src;
 		int dest = edge.dest;
 
-		if (!Contains(state->F[i + 1], state->Fsize[i + 1], src))
+		// i + 1 番目のフロンティア配列に src が含まれない（重複チェック）
+		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], src))
 		{
+			// i + 1 番目のフロンティア配列に src を追加
 			state->F[i + 1][state->Fsize[i + 1]] = src;
 			++state->Fsize[i + 1];
 		}
-		if (!Contains(state->F[i + 1], state->Fsize[i + 1], dest))
+		// dest に対しても同様の処理
+		if (!Array_Contains(state->F[i + 1], state->Fsize[i + 1], dest))
 		{
+			// i + 1 番目のフロンティア配列に dest を追加
 			state->F[i + 1][state->Fsize[i + 1]] = dest;
 			++state->Fsize[i + 1];
 		}
 
+		// i + 1 番目以降の辺に，頂点 src が出現しないかどうかチェック。
+		// 出現しないなら，i + 1 番目のフロンティアから src が去るので，
+		// src を削除する。
 		if (!State_FindElement(i, src, edge_list, edge_list_size))
 		{
-			Remove(state->F[i + 1], &state->Fsize[i + 1], src);
+			// src を削除
+			Array_Remove(state->F[i + 1], &state->Fsize[i + 1], src);
 		}
+		// dest に対しても同様の処理
 		if (!State_FindElement(i, dest, edge_list, edge_list_size))
 		{
-			Remove(state->F[i + 1], &state->Fsize[i + 1], dest);
+			Array_Remove(state->F[i + 1], &state->Fsize[i + 1], dest);
 		}
 	}
 }
 
+// i + 1 番目以降の辺に，頂点 src が出現しないかどうかチェック。
+// 出現するなら 1 を，しないなら 0 を返す。
 int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list_size)
 {
 	int i;
@@ -348,12 +391,22 @@ int State_FindElement(int edge_number, int value, Edge* edge_list, int edge_list
 	return 0;
 }
 
+//******************************************************************************
+// ZDD 構造体
+// ZDD のノードが node_list_array に格納される。
+// レベル i のノードは node_list_array[i] に格納される。
+// i は1始まり。0は使わない。
+// すなわち，レベル i の j 番目のノードは node_list_array[i][j] で参照できる。
+// node_list_array[i] のサイズ，すなわちレベル i のノードの個数が
+// Nsize[i] に格納される。
+// node_list_array_size は node_list_array のサイズ（レベルが何個あるか）
 typedef struct ZDD_ {
-	ZDDNode*** node_list_array;
-	int node_list_array_size;
-	int* Nsize;
+	ZDDNode*** node_list_array; // ZDDNode ポインタの2次元配列
+	int node_list_array_size;   // node_list_array のサイズ
+	int* Nsize; // node_list_array[i] のサイズ
 } ZDD;
 
+// ZDD構造体を動的に生成し，初期化して返す。
 ZDD* ZDD_New(ZDDNode*** nlistarray, int nlistarray_size, int* Ns)
 {
 	ZDD* zdd = (ZDD*)malloc(sizeof(ZDD));
@@ -363,6 +416,7 @@ ZDD* ZDD_New(ZDDNode*** nlistarray, int nlistarray_size, int* Ns)
 	return zdd;
 }
 
+// ZDD 構造体を破棄する際に呼ばれなければならない
 void ZDD_Destruct(ZDD* zdd)
 {
 	int i, j;
@@ -381,6 +435,7 @@ void ZDD_Destruct(ZDD* zdd)
 	zdd->Nsize = NULL;
 }
 
+// ZDDのノード数を返す
 int64 ZDD_GetNumberOfNodes(ZDD* zdd)
 {
 	int i;
@@ -389,9 +444,10 @@ int64 ZDD_GetNumberOfNodes(ZDD* zdd)
 	{
 		num += zdd->Nsize[i];
 	}
-	return num + 2;
+	return num + 2; // + 2 は終端ノードの分
 }
 
+// ZDDが表現する集合族の大きさ（解の個数）を返す
 int64 ZDD_GetNumberOfSolutions(ZDD* zdd)
 {
 	int i, j;
@@ -399,95 +455,113 @@ int64 ZDD_GetNumberOfSolutions(ZDD* zdd)
 	ZeroTerminal->sol = 0;
 	OneTerminal->sol = 1;
 
-	for (i = zdd->node_list_array_size - 1; i >= 1; --i)
+	// 動的計画法による解の個数の計算。
+	// 0枝側のノードの解の個数と，1枝側のノードの解の個数を足したものが，
+	// そのノードの解の個数になる。
+	// レベルが高いノードから低いノードに向けて計算する
+	for (i = zdd->node_list_array_size - 1; i >= 1; --i) // 各レベル i について
 	{
-		for (j = 0; j < zdd->Nsize[i]; ++j)
+		for (j = 0; j < zdd->Nsize[i]; ++j) // レベル i の各ノードについて
 		{
+			// 0枝側の子ノード
 			ZDDNode* lo_node = ZDDNode_GetChild(zdd->node_list_array[i][j], 0);
+			// 1枝側の子ノード
 			ZDDNode* hi_node = ZDDNode_GetChild(zdd->node_list_array[i][j], 1);
 			zdd->node_list_array[i][j]->sol = lo_node->sol + hi_node->sol;
 		}
 	}
-	return zdd->node_list_array[1][0]->sol;
+	return zdd->node_list_array[1][0]->sol; // 根ノード
 }
 
+// ZDDを出力
 void ZDD_PrintZDD(ZDD* zdd, FILE* fout)
 {
 	int i, j;
 	for (i = 1; i < zdd->node_list_array_size - 1; ++i) {
 		fprintf(fout, "#%d\r\n", i);
 		for (j = 0; j < zdd->Nsize[i]; ++j) {
-			ZDDNode_ToString(zdd->node_list_array[i][j], fout);
+			ZDDNode_Print(zdd->node_list_array[i][j], fout);
 			fprintf(fout, "\r\n");
 		}
 	}
 }
+
+//******************************************************************************
+// アルゴリズム本体
 
 ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state);
 void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state);
 ZDDNode* Find(ZDDNode* n_prime, ZDDNode** N_i, int N_i_size, int i, State* state);
 int IsEquivalent(ZDDNode* node1, ZDDNode* node2, int i, State* state);
 
+// フロンティア法を実行し，ZDDを作成して返す
+// アルゴリズムの中身については文献参照
 ZDD* Construct(State* state)
 {
 	int i, j, x;
-	Edge* edge_list = Graph_GetEdgeList(state->graph);
-	int edge_list_size = Graph_GetEdgeListSize(state->graph);
-	ZDDNode*** N = (ZDDNode***)malloc(sizeof(ZDDNode**) * (edge_list_size + 2));
-	int* Nsize = (int*)malloc(sizeof(int) * (edge_list_size + 2));
-	int* Ncapacity = (int*)malloc(sizeof(int)* (edge_list_size + 2));
-	for (i = 0; i < edge_list_size + 2; ++i) {
+	ZDDNode* n_hat, *n_prime, *n_primeprime;
+	int m = state->graph->edge_list_size;      // 辺の数
+	int n = state->graph->number_of_vertices;  // 頂点の数
+
+	// 生成したノードを格納する配列
+	ZDDNode*** N = (ZDDNode***)malloc(sizeof(ZDDNode**) * (m + 2)); 
+	int* Nsize = (int*)malloc(sizeof(int) * (m + 2)); // 格納したノードの数
+	int* Ncapacity = (int*)malloc(sizeof(int)* (m + 2)); // N を格納できる要素のサイズ
+	for (i = 0; i < m + 2; ++i) {
 		Nsize[i] = 0;
-		Ncapacity[i] = 1024;
+		Ncapacity[i] = 1024; // 格納できる要素の初期値（後で拡張される）
 	}
 	N[1] = (ZDDNode**)malloc(sizeof(ZDDNode*) * Ncapacity[1]);
-	N[1][0] = ZDDNode_CreateRootNode(Graph_GetNumberOfVertices(state->graph));
+	// 根ノードを作成して N[1] に追加
+	N[1][0] = ZDDNode_CreateRootNode(n);
 	++Nsize[1];
 
-	for (i = 1; i <= edge_list_size; ++i) {
+	for (i = 1; i <= m; ++i) { // 各辺 i についての処理
 		N[i + 1] = (ZDDNode**)malloc(sizeof(ZDDNode*) * Ncapacity[i + 1]);
 
-		for (j = 0; j < Nsize[i]; ++j)
+		for (j = 0; j < Nsize[i]; ++j) // レベル i の各ノードについての処理
 		{
-			ZDDNode* n_hat = N[i][j];
-			for (x = 0; x <= 1; ++x)
-			{
-				ZDDNode* n_prime = CheckTerminal(n_hat, i, x, state);
+			n_hat = N[i][j]; // レベル i の j 番目のノード
+			for (x = 0; x <= 1; ++x) { // x枝（x = 0, 1）についての処理
+				n_prime = CheckTerminal(n_hat, i, x, state);
 
-				if (n_prime == NULL)
+				if (n_prime == NULL) // x枝の先が0終端でも1終端でもないと判定された
 				{
-					n_prime = ZDDNode_MakeCopy(n_hat, Graph_GetNumberOfVertices(state->graph));
+					n_prime = ZDDNode_MakeCopy(n_hat, n);
 					UpdateInfo(n_prime, i, x, state);
-					ZDDNode* n_primeprime = Find(n_prime, N[i + 1], Nsize[i + 1], i, state);
+					n_primeprime = Find(n_prime, N[i + 1], Nsize[i + 1], i, state);
 					if (n_primeprime != NULL)
 					{
-						ZDDNode_Destruct(n_prime);
+						ZDDNode_Destruct(n_prime); // n_prime を破棄
 						free(n_prime);
 						n_prime = n_primeprime;
 					}
 					else
 					{
 						ZDDNode_SetNextId(n_prime);
-						N[i + 1][Nsize[i + 1]] = n_prime;
+						N[i + 1][Nsize[i + 1]] = n_prime; // N[i + 1] にノードを追加
 						++Nsize[i + 1];
+						// size が capacity を超えたら
 						if (Nsize[i + 1] >= Ncapacity[i + 1]) {
-							Ncapacity[i + 1] *= 2;
-							N[i + 1] = realloc(N[i + 1], sizeof(ZDDNode*) * Ncapacity[i + 1]);
+							Ncapacity[i + 1] *= 2; // capacity を 2 倍にして
+							N[i + 1] = realloc(N[i + 1],
+								sizeof(ZDDNode*) * Ncapacity[i + 1]); // 再割り当て
 						}
 					}
 				}
-				ZDDNode_SetChild(n_hat, n_prime, x);
+				ZDDNode_SetChild(n_hat, n_prime, x); // node に
 			}
 		}
 	}
 	free(Ncapacity);
-	return ZDD_New(N, edge_list_size + 2, Nsize);
+	return ZDD_New(N, m + 2, Nsize); // ZDDを作って返す
 }
 
+// アルゴリズムの中身については文献参照
 ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 {
 	int y, u;
-	Edge edge = Graph_GetEdgeList(state->graph)[i - 1];
+	Edge edge = state->graph->edge_list[i - 1];
 	if (x == 1)
 	{
 		if (n_hat->comp[edge.src] == n_hat->comp[edge.dest])
@@ -495,7 +569,7 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 			return ZeroTerminal;
 		}
 	}
-	ZDDNode* n_prime = ZDDNode_MakeCopy(n_hat, Graph_GetNumberOfVertices(state->graph));
+	ZDDNode* n_prime = ZDDNode_MakeCopy(n_hat, state->graph->number_of_vertices);
 	UpdateInfo(n_prime, i, x, state);
 
 	for (y = 0; y <= 1; ++y)
@@ -517,7 +591,7 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 	for (y = 0; y <= 1; ++y)
 	{
 		u = (y == 0 ? edge.src : edge.dest);
-		if (!Contains(state->F[i], state->Fsize[i], u))
+		if (!Array_Contains(state->F[i], state->Fsize[i], u))
 		{
 			if ((u == state->s || u == state->t) && n_prime->deg[u] != 1)
 			{
@@ -525,7 +599,8 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 				free(n_prime);
 				return ZeroTerminal;
 			}
-			else if ((u != state->s && u != state->t) && n_prime->deg[u] != 0 && n_prime->deg[u] != 2)
+			else if ((u != state->s && u != state->t) &&
+				n_prime->deg[u] != 0 && n_prime->deg[u] != 2)
 			{
 				ZDDNode_Destruct(n_prime);
 				free(n_prime);
@@ -533,7 +608,7 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 			}
 		}
 	}
-	if (i == Graph_GetEdgeListSize(state->graph))
+	if (i == state->graph->edge_list_size)
 	{
 		ZDDNode_Destruct(n_prime);
 		free(n_prime);
@@ -544,14 +619,15 @@ ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 	return NULL;
 }
 
+// アルゴリズムの中身については文献参照
 void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 {
 	int y, j, u, c_min, c_max;
-	Edge edge = Graph_GetEdgeList(state->graph)[i - 1];
+	Edge edge = state->graph->edge_list[i - 1];
 	for (y = 0; y <= 1; ++y)
 	{
 		u = (y == 0 ? edge.src : edge.dest);
-		if (!Contains(state->F[i - 1], state->Fsize[i - 1], u))
+		if (!Array_Contains(state->F[i - 1], state->Fsize[i - 1], u))
 		{
 			n_hat->deg[u] = 0;
 			n_hat->comp[u] = u;
@@ -561,8 +637,10 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 	{
 		++n_hat->deg[edge.src];
 		++n_hat->deg[edge.dest];
-		c_min = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ? n_hat->comp[edge.src] : n_hat->comp[edge.dest]);
-		c_max = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ? n_hat->comp[edge.dest] : n_hat->comp[edge.src]);
+		c_min = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ?
+			n_hat->comp[edge.src] : n_hat->comp[edge.dest]);
+		c_max = (n_hat->comp[edge.src] < n_hat->comp[edge.dest] ?
+			n_hat->comp[edge.dest] : n_hat->comp[edge.src]);
 
 		for (j = 0; j < state->Fsize[i]; ++j) {
 			u = state->F[i][j];
@@ -574,12 +652,17 @@ void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 	}
 }
 
+// ノード配列 N_i の中に，n_prime と等価なノードが存在するか調べる
+// 等価なノードが存在すればそれを返す。存在しなければ NULL を返す。
+// N_i_size: N_i の大きさ（要素数）
+// i: レベル
 ZDDNode* Find(ZDDNode* n_prime, ZDDNode** N_i, int N_i_size, int i, State* state)
 {
 	int j;
 	for (j = 0; j < N_i_size; ++j) {
 		ZDDNode* n_primeprime = N_i[j];
 
+		// n_prime と n_primeprime が等価かどうか判定
 		if (IsEquivalent(n_prime, n_primeprime, i, state)) {
 			return n_primeprime;
 		}
@@ -587,6 +670,8 @@ ZDDNode* Find(ZDDNode* n_prime, ZDDNode** N_i, int N_i_size, int i, State* state
 	return NULL;
 }
 
+// node1 と node2 が等価か調べる
+// i: レベル
 int IsEquivalent(ZDDNode* node1, ZDDNode* node2, int i, State* state)
 {
 	int j, v;
@@ -602,24 +687,27 @@ int IsEquivalent(ZDDNode* node1, ZDDNode* node2, int i, State* state)
 	return 1;
 }
 
-int main()
+int main(void)
 {
 	Graph graph;
 	State* state;
 	ZDD* zdd;
 
+	// ZDDNode の初期化（プログラム実行時に1度呼ぶ）
 	ZDDNode_Initialize();
 
 	// グラフ（隣接リスト）を標準入力から読み込む
 	Graph_ParseAdjListText(&graph, stdin);
 
-	state = State_New(&graph, 1, Graph_GetNumberOfVertices(&graph));
+	// State の作成
+	state = State_New(&graph, 1, graph.number_of_vertices);
 
 	// 入力グラフの頂点の数と辺の数を出力
 	fprintf(stderr, "# of vertices = %d, # of edges = %d\n",
-		Graph_GetNumberOfVertices(&graph), Graph_GetEdgeListSize(&graph));
+		graph.number_of_vertices, graph.edge_list_size);
 
-	zdd = Construct(state); // フロンティア法によるZDD構築
+	// フロンティア法によるZDD構築
+	zdd = Construct(state);
 
 	// 作成されたZDDのノード数と解の数を出力
 	fprintf(stderr, "# of nodes of ZDD = %lld, # of solutions = %lld\n", 
