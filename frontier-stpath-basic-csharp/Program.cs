@@ -243,7 +243,7 @@ namespace frontier_stpath_basic_csharp
                 }
             }
 
-            // 節点の最大番号を求める
+            // 頂点の最大番号を求める
             int max_num = int.MinValue;
 
             foreach (Edge e in edge_list)
@@ -257,7 +257,7 @@ namespace frontier_stpath_basic_csharp
                     max_num = e.dest;
                 }
             }
-            number_of_vertices = max_num; // 節点の最大番号を節点数とする。
+            number_of_vertices = max_num; // 頂点の最大番号を頂点数とする。
         }
 
         public override string ToString()
