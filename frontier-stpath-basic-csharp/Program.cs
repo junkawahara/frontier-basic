@@ -436,7 +436,7 @@ namespace frontier_stpath_basic_csharp
 
     class ZDD
     {
-        List<ZDDNode>[] node_list_array_;
+        private List<ZDDNode>[] node_list_array_;
 
         public ZDD(List<ZDDNode>[] node_list_array)
         {
