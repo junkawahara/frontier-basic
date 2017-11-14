@@ -105,7 +105,7 @@ public:
 						max_vertex = x;
 					}
 
-					unsigned int e;
+					size_t e;
 					for (e = 0; e < edge_list_.size(); ++e) { // 重複除去
 						if (edge_list_[e].src == edge.src && edge_list_[e].dest == edge.dest) {
 							break;
@@ -125,7 +125,7 @@ public:
 	string ToString()
 	{
 		ostringstream oss;
-		for (unsigned int i = 0; i < edge_list_.size(); ++i)
+		for (size_t i = 0; i < edge_list_.size(); ++i)
 		{
 			oss << "(" << edge_list_[i].src << ", " << edge_list_[i].dest
 				<< ")";
@@ -298,7 +298,7 @@ public:
 
 	~State()
 	{
-		for (unsigned int i = 0; i < graph->GetEdgeList().size() + 1; ++i) {
+		for (size_t i = 0; i < graph->GetEdgeList().size() + 1; ++i) {
 			delete F[i];
 		}
 		delete[] F;
@@ -312,11 +312,11 @@ private:
 		F = new vector<int>*[edge_list.size() + 1];
 		F[0] = new vector<int>;
 
-		for (unsigned int i = 0; i < edge_list.size(); ++i)
+		for (size_t i = 0; i < edge_list.size(); ++i)
 		{
 			F[i + 1] = new vector<int>;
 			// i 番目のフロンティア配列の要素すべてを，i + 1 番目のフロンティア配列に追加する
-			for (unsigned int j = 0; j < F[i]->size(); ++j) {
+			for (size_t j = 0; j < F[i]->size(); ++j) {
 				F[i + 1]->push_back((*F[i])[j]);
 			}
 
@@ -357,7 +357,7 @@ private:
 	bool FindElement(int edge_number, int value)
 	{
 		const vector<Edge>& edge_list = graph->GetEdgeList();
-		for (unsigned int i = edge_number + 1; i < edge_list.size(); ++i)
+		for (size_t i = edge_number + 1; i < edge_list.size(); ++i)
 		{
 			if (value == edge_list[i].src || value == edge_list[i].dest)
 			{
@@ -387,8 +387,8 @@ public:
 
 	~ZDD()
 	{
-		for (unsigned int i = 0; i < node_list_array_->size(); ++i) {
-			for (unsigned int j = 0; j < (*node_list_array_)[i].size(); ++j) {
+		for (size_t i = 0; i < node_list_array_->size(); ++i) {
+			for (size_t j = 0; j < (*node_list_array_)[i].size(); ++j) {
 				delete (*node_list_array_)[i][j];
 			}
 		}
@@ -399,7 +399,7 @@ public:
 	int64_t GetNumberOfNodes()
 	{
 		int64_t num = 0;
-		for (unsigned int i = 1; i < node_list_array_->size(); ++i)
+		for (size_t i = 1; i < node_list_array_->size(); ++i)
 		{
 			num += static_cast<int64_t>((*node_list_array_)[i].size());
 		}
@@ -418,7 +418,7 @@ public:
 		// レベルが高いノードから低いノードに向けて計算する
 		for (int i = static_cast<int>(node_list_array_->size()) - 1; i >= 1; --i)
 		{
-			for (unsigned int j = 0; j < (*node_list_array_)[i].size(); ++j)
+			for (size_t j = 0; j < (*node_list_array_)[i].size(); ++j)
 			{
 				// 0枝側の子ノード
 				ZDDNode* lo_node = (*node_list_array_)[i][j]->GetChild(0);
@@ -435,9 +435,9 @@ public:
 	{
 		ostringstream oss;
 
-		for (unsigned int i = 1; i < node_list_array_->size() - 1; ++i) {
+		for (size_t i = 1; i < node_list_array_->size() - 1; ++i) {
 			oss << "#" << i << "\r\n";
-			for (unsigned int j = 0; j < (*node_list_array_)[i].size(); ++j) {
+			for (size_t j = 0; j < (*node_list_array_)[i].size(); ++j) {
 				oss << (*node_list_array_)[i][j]->ToString() << "\r\n";
 			}
 		}
@@ -461,8 +461,8 @@ public:
 		// 根ノードを作成して N[1] に追加
 		(*N)[1].push_back(ZDDNode::CreateRootNode(state->graph->GetNumberOfVertices()));
 
-		for (unsigned int i = 1; i <= edge_list.size(); ++i) { // 各辺 i についての処理
-			for (unsigned int j = 0; j < (*N)[i].size(); ++j) { // レベル i の各ノードについての処理
+		for (size_t i = 1; i <= edge_list.size(); ++i) { // 各辺 i についての処理
+			for (size_t j = 0; j < (*N)[i].size(); ++j) { // レベル i の各ノードについての処理
 				ZDDNode* n_hat = (*N)[i][j]; // レベル i の j 番目のノード
 				for (int x = 0; x <= 1; ++x) { // x枝（x = 0, 1）についての処理
 					ZDDNode* n_prime = CheckTerminal(n_hat, i, x, state);
@@ -565,7 +565,7 @@ private:
 			int c_max = std::max(n_hat->comp[edge.src], n_hat->comp[edge.dest]);
 
 
-			for (unsigned int j = 0; j < state->F[i]->size(); ++j)
+			for (size_t j = 0; j < state->F[i]->size(); ++j)
 			{
 				int u = (*state->F[i])[j];
 				if (n_hat->comp[u] == c_max)
@@ -600,7 +600,7 @@ private:
 	{
 		vector<int>& frontier = (*state->F[i]);
 
-		for (unsigned int j = 0; j < frontier.size(); ++j) { // フロンティア上の頂点についてのみ比較
+		for (size_t j = 0; j < frontier.size(); ++j) { // フロンティア上の頂点についてのみ比較
 			int v = frontier[j];
 			if (node1->deg[v] != node2->deg[v]) {
 				return false;
