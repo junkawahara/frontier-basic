@@ -74,9 +74,9 @@ public:
 		return number_of_vertices_;
 	}
 
-	vector<Edge>* GetEdgeList() // 辺リストを返す
+	const vector<Edge>& GetEdgeList() // 辺リストを返す
 	{
-		return &edge_list_;
+		return edge_list_;
 	}
 
 	// ファイルから隣接リスト形式のグラフを読み込む
@@ -298,7 +298,7 @@ public:
 
 	~State()
 	{
-		for (unsigned int i = 0; i < graph->GetEdgeList()->size() + 1; ++i) {
+		for (unsigned int i = 0; i < graph->GetEdgeList().size() + 1; ++i) {
 			delete F[i];
 		}
 		delete[] F;
@@ -307,12 +307,12 @@ public:
 private:
 	void ComputeFrontier() // フロンティアの計算
 	{
-		vector<Edge>* edge_list = graph->GetEdgeList();
+		const vector<Edge>& edge_list = graph->GetEdgeList();
 
-		F = new vector<int>*[edge_list->size() + 1];
+		F = new vector<int>*[edge_list.size() + 1];
 		F[0] = new vector<int>;
 
-		for (unsigned int i = 0; i < edge_list->size(); ++i)
+		for (unsigned int i = 0; i < edge_list.size(); ++i)
 		{
 			F[i + 1] = new vector<int>;
 			// i 番目のフロンティア配列の要素すべてを，i + 1 番目のフロンティア配列に追加する
@@ -320,7 +320,7 @@ private:
 				F[i + 1]->push_back((*F[i])[j]);
 			}
 
-			Edge edge = (*edge_list)[i];
+			Edge edge = edge_list[i];
 			int src = edge.src;
 			int dest = edge.dest;
 
@@ -356,10 +356,10 @@ private:
 	// 出現するなら true を，しないなら false を返す。
 	bool FindElement(int edge_number, int value)
 	{
-		vector<Edge>* edge_list = graph->GetEdgeList();
-		for (unsigned int i = edge_number + 1; i < edge_list->size(); ++i)
+		const vector<Edge>& edge_list = graph->GetEdgeList();
+		for (unsigned int i = edge_number + 1; i < edge_list.size(); ++i)
 		{
-			if (value == (*edge_list)[i].src || value == (*edge_list)[i].dest)
+			if (value == edge_list[i].src || value == edge_list[i].dest)
 			{
 				return true;
 			}
@@ -455,13 +455,13 @@ public:
 	// アルゴリズムの中身については文献参照
 	static ZDD* Construct(State* state)
 	{
-		vector<Edge>* edge_list = state->graph->GetEdgeList();
+		const vector<Edge>& edge_list = state->graph->GetEdgeList();
 		// 生成したノードを格納する配列
-		vector<vector <ZDDNode*> >* N = new vector<vector <ZDDNode*> >(edge_list->size() + 2);
+		vector<vector <ZDDNode*> >* N = new vector<vector <ZDDNode*> >(edge_list.size() + 2);
 		// 根ノードを作成して N[1] に追加
 		(*N)[1].push_back(ZDDNode::CreateRootNode(state->graph->GetNumberOfVertices()));
 
-		for (unsigned int i = 1; i <= edge_list->size(); ++i) { // 各辺 i についての処理
+		for (unsigned int i = 1; i <= edge_list.size(); ++i) { // 各辺 i についての処理
 			for (unsigned int j = 0; j < (*N)[i].size(); ++j) { // レベル i の各ノードについての処理
 				ZDDNode* n_hat = (*N)[i][j]; // レベル i の j 番目のノード
 				for (int x = 0; x <= 1; ++x) { // x枝（x = 0, 1）についての処理
@@ -493,7 +493,7 @@ private:
 	// アルゴリズムの中身については文献参照
 	static ZDDNode* CheckTerminal(ZDDNode* n_hat, int i, int x, State* state)
 	{
-		Edge edge = (*state->graph->GetEdgeList())[i - 1];
+		Edge edge = state->graph->GetEdgeList()[i - 1];
 		if (x == 1)
 		{
 			if (n_hat->comp[edge.src] == n_hat->comp[edge.dest])
@@ -535,7 +535,7 @@ private:
 				}
 			}
 		}
-		if (i == static_cast<int>(state->graph->GetEdgeList()->size()))
+		if (i == static_cast<int>(state->graph->GetEdgeList().size()))
 		{
 			delete n_prime;
 			return ZDDNode::OneTerminal;
@@ -547,7 +547,7 @@ private:
 	// アルゴリズムの中身については文献参照
 	static void UpdateInfo(ZDDNode* n_hat, int i, int x, State* state)
 	{
-		Edge edge = (*state->graph->GetEdgeList())[i - 1];
+		Edge edge = state->graph->GetEdgeList()[i - 1];
 		for (int y = 0; y <= 1; ++y)
 		{
 			int u = (y == 0 ? edge.src : edge.dest);
@@ -628,7 +628,7 @@ int main()
 
 	// 入力グラフの頂点の数と辺の数を出力
 	cerr << "# of vertices = " << graph.GetNumberOfVertices()
-		<< ", # of edges = " << graph.GetEdgeList()->size() << endl;
+         << ", # of edges = " << graph.GetEdgeList().size() << endl;
 
 	// フロンティア法によるZDD構築
 	ZDD* zdd = FrontierAlgorithm::Construct(&state);
