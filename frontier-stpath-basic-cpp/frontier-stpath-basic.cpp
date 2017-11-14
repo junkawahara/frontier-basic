@@ -29,8 +29,6 @@
 
 using namespace std;
 
-typedef long long int int64; // 64ビット整数型
-
 //******************************************************************************
 // 補助関数
 
@@ -147,7 +145,7 @@ class ZDDNode {
 public:
 	int* deg;  // deg 配列（フロンティア法アルゴリズムの文献参照）
 	int* comp; // comp 配列（フロンティア法アルゴリズムの文献参照）
-	int64 sol; // 解の数の計算時に使用する変数
+	int64_t sol; // 解の数の計算時に使用する変数
 	ZDDNode* zero_child; // 0枝側の子ノード
 	ZDDNode* one_child;  // 1枝側の子ノード
 
@@ -398,18 +396,18 @@ public:
 	}
 
 	// ZDDのノード数を返す
-	int64 GetNumberOfNodes()
+	int64_t GetNumberOfNodes()
 	{
-		int64 num = 0;
+		int64_t num = 0;
 		for (unsigned int i = 1; i < node_list_array_->size(); ++i)
 		{
-			num += static_cast<int64>((*node_list_array_)[i].size());
+			num += static_cast<int64_t>((*node_list_array_)[i].size());
 		}
 		return num + 2; // + 2 は終端ノードの分
 	}
 
 	// ZDDが表現する集合族の大きさ（解の個数）を返す
-	int64 GetNumberOfSolutions()
+	int64_t GetNumberOfSolutions()
 	{
 		ZDDNode::ZeroTerminal->sol = 0;
 		ZDDNode::OneTerminal->sol = 1;
