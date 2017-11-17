@@ -12,4 +12,4 @@ s-tパス以外のフロンティア法については、[frontier](https://gith
 * frontier-stpath-basic-c: フロンティア法（s-tパスの場合）のC言語での実装
 * frontier-stpath-basic-cpp: フロンティア法（s-tパスの場合）のC++言語での実装
 * frontier-stpath-basic-csharp: フロンティア法（s-tパスの場合）のC#言語での実装
-* simpath-basic-csharp: Knuth 氏による simpath を C# に移植して読みやすくしたもの
+* simpath-basic-csharp: Knuth 氏による [simpath](http://www-cs-faculty.stanford.edu/~knuth/programs/simpath.w) を C# に移植して読みやすくしたもの
